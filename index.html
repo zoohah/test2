@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Master: Golden Coin</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@800&family=Noto+Sans+KR:wght@500;700;900&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --primary: #fbbf24;
+            --secondary: #3b82f6;
+            --success: #10b981;
+            --card-bg: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        }
+
+        body { font-family: 'Noto Sans KR', sans-serif; background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-dark) 100%); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; user-select: none; }
+        
+        #game-screen { width: 850px; height: 650px; background-color: #1e1e2f; background-image: radial-gradient(rgba(251, 191, 36, 0.1) 1px, transparent 1px); background-size: 40px 40px; border: 6px solid #334155; position: relative; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); overflow: hidden; transition: all 0.3s; }
+        
+        @keyframes flashRed {
+            0% { box-shadow: inset 0 0 10px #ef4444; }
+            100% { box-shadow: inset 0 0 100px #ef4444; }
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        #title-screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.95); z-index: 20; backdrop-filter: blur(5px); }
+        
+        .game-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: var(--primary); font-size: 3em; text-shadow: 0px 4px 15px rgba(251, 191, 36, 0.4), 3px 3px 0px #b45309; text-align: center; margin-bottom: 5px; line-height: 1.2; letter-spacing: 2px; }
+        .game-subtitle { font-family: 'Noto Sans KR', sans-serif; font-size: 1.2em; font-weight: 900; color: #f8fafc; margin-bottom: 15px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        
+        .instructions { background: rgba(255, 255, 255, 0.1); padding: 15px 30px; border-radius: 15px; border: 2px solid #475569; width: 70%; line-height: 1.6; font-size: 1em; margin-bottom: 25px; box-sizing: border-box; }
+        .instructions h3 { margin-top: 0; color: #60a5fa; text-align: center; font-size: 1.2em; margin-bottom: 10px; }
+        .instructions p { margin-bottom: 15px !important; }
+        .instructions ul { padding-left: 20px; margin: 0; }
+        .instructions li { margin-bottom: 8px; }
+
+        .start-btn { font-family: 'Noto Sans KR', sans-serif; font-weight: 900; padding: 15px 35px; font-size: 1.2em; background: var(--primary); color: #1e293b; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 6px 0 #b45309, 0 15px 20px rgba(0,0,0,0.4); transition: 0.1s; animation: pulse 2s infinite; }
+        .start-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #b45309; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        #ui-layer { position: absolute; top: 20px; width: 100%; justify-content: space-around; font-family: 'Poppins', sans-serif; font-weight: bold; font-size: 18px; z-index: 10; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: none; }
+        .coin-counter { color: var(--primary); }
+        .timer { color: #ef4444; }
+
+        #stage-container { position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding-top: 20px; display: none; z-index: 5; }
+        
+        .story-text { background: rgba(15, 23, 42, 0.85); padding: 15px 25px; border-radius: 12px; width: 80%; margin-bottom: 20px; line-height: 1.6; border-left: 6px solid var(--primary); font-size: 1.05em; text-align: left; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+
+        .card-grid { display: flex; gap: 30px; margin-bottom: 30px; perspective: 1000px; }
+        .card { width: 130px; height: 190px; background: var(--card-bg); border-radius: 15px; cursor: pointer; transform: rotateY(5deg); transition: all 0.3s; box-shadow: -5px 10px 15px rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1e293b; font-weight: bold; text-align: center; border: 4px solid #cbd5e1; position: relative; }
+        .card:hover { transform: translateY(-10px) scale(1.05); border-color: var(--primary); box-shadow: 0 15px 25px rgba(251, 191, 36, 0.3); }
+        .card-icon { font-size: 3rem; margin-bottom: 10px; }
+        .card-title { font-size: 0.9em; background: rgba(255,255,255,0.9); padding: 5px 8px; border-radius: 8px; }
+
+        .unlock-btn { font-family: 'Noto Sans KR', sans-serif; padding: 15px 30px; font-size: 1.2em; font-weight: bold; background: linear-gradient(to right, #ef4444, #dc2626); color: white; border: 4px solid #991b1b; border-radius: 12px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .unlock-btn:hover { transform: scale(1.05); background: linear-gradient(to right, #f87171, #ef4444); }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 50; backdrop-filter: blur(4px); }
+        
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; background: #ffffff; color: #1e293b; padding: 35px; border-radius: 20px; text-align: center; display: none; z-index: 100; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+        
+        #clue-modal { border: 6px solid #94a3b8; }
+        #clue-icon { font-size: 4rem; margin: 0; }
+        #clue-text { font-size: 1.2em; line-height: 1.6; background: #f1f5f9; padding: 20px; border-radius: 12px; font-weight: bold; margin: 20px 0; border-left: 5px solid #64748b; }
+
+        #answer-modal { border: 6px solid var(--primary); }
+        #answer-modal h3 { color: #dc2626; font-size: 1.5em; margin-top: 0; }
+        
+        #explain-modal { border: 6px solid var(--success); }
+        #explain-modal h3 { color: var(--success); font-size: 1.6em; margin-top: 0; }
+        #explain-text { font-size: 1.1em; line-height: 1.6; background: #f0fdf4; padding: 20px; border-radius: 12px; font-weight: bold; margin: 20px 0; border-left: 5px solid var(--success); text-align: left; }
+
+        input { padding: 15px; width: 80%; margin: 15px 0; border: 3px solid #e2e8f0; border-radius: 10px; font-size: 1.2em; text-align: center; font-weight: bold; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--secondary); }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .btn-group button { padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05em; cursor: pointer; margin: 5px; transition: 0.2s; }
+        .btn-submit { background: var(--secondary); color: white; }
+        .btn-submit:hover { background: #2563eb; }
+        .btn-close { background: #e2e8f0; color: #475569; }
+        .btn-close:hover { background: #cbd5e1; }
+        .btn-hint { background: #64748b; color: white; font-size: 0.9em; }
+
+        #minigame-container { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111827; z-index: 40; }
+        canvas { display: block; cursor: crosshair; } 
+        #minigame-ui { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; font-size: 1.5em; font-weight: bold; color: white; text-shadow: 2px 2px 4px black; pointer-events: none; z-index: 45; }
+        
+        #touch-controls { position: absolute; bottom: 25px; left: 0; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 45; }
+        .control-btn { background: #334155; border: 2px solid #475569; border-bottom: 6px solid #1e293b; color: white; font-size: 1.5em; width: 80px; height: 60px; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); font-family: 'Noto Sans KR', sans-serif; font-weight: bold; transition: 0.1s; }
+        .control-btn:active { transform: translateY(4px); border-bottom: 2px solid #1e293b; background: #475569; }
+        .control-btn#btn-shoot { width: 160px; background: #dc2626; border-color: #ef4444; border-bottom-color: #991b1b; color: white; font-size: 1.3em; }
+        .control-btn#btn-shoot:active { background: #ef4444; border-bottom-width: 2px; }
+
+        #controls-guide { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); color: #cbd5e1; font-size: 0.9em; text-shadow: 1px 1px 2px black; pointer-events: none; text-align: center; z-index: 45; }
+        
+        #mg-result { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.95); padding: 40px; border-radius: 20px; text-align: center; border: 4px solid var(--primary); box-shadow: 0 25px 50px rgba(0,0,0,0.8); z-index: 50; }
+    </style>
+</head>
+<body>
+
+<div id="game-screen">
+    <div id="title-screen">
+        <div class="game-title">MONEY<br>MASTER</div>
+        <div class="game-subtitle">잃어버린 황금 동전을 찾아서</div>
+        <div class="instructions">
+            <h3>📜 프롤로그 & 임무 안내</h3>
+            <p style="text-align: center; color: #cbd5e1; font-size: 0.95em;">
+                즐거운 화폐 박물관 견학 날. 당신은 신비한 황금 동전을 만지다 그만<br>
+                <strong>마법의 금융 미로</strong>에 갇히고 말았습니다!<br>
+                전설의 은행장이 남긴 10개의 관문을 통과해야만 집으로 돌아갈 수 있습니다.
+            </p>
+            <ul>
+                <li><strong>목표:</strong> 15분 안에 10개의 금융 문제를 풀고 탈출하세요!</li>
+                <li><strong>방법:</strong> 화면에 있는 3개의 카드를 클릭하여 <b>단서</b>를 모으세요.</li>
+                <li><strong>조합:</strong> 3개의 단서를 바탕으로 스스로 식을 세워 정답(숫자)을 구하세요.</li>
+                <li><strong>탈출:</strong> <b>[🔒 자물쇠 풀기]</b> 버튼을 눌러 암호를 입력하세요.</li>
+            </ul>
+        </div>
+        <button class="start-btn" onclick="startGame()">모험 시작하기</button>
+    </div>
+
+    <div id="ui-layer">
+        <div class="coin-counter">🪙 COINS: <span id="coin-count">0</span> / 10</div>
+        <div class="timer">⏳ TIME: <span id="time-left">15:00</span></div>
+    </div>
+
+    <div id="stage-container">
+        <div class="story-text" id="story-display">스토리 로딩중...</div>
+        <div class="card-grid" id="card-grid"></div>
+        <button class="unlock-btn" onclick="openAnswerModal()">🔒 자물쇠 풀기</button>
+    </div>
+
+    <div id="minigame-container">
+        <div id="minigame-ui">
+            <div style="color: var(--primary);">보유 동전: <span id="mg-coins">10</span>개</div>
+            <div style="color: #ef4444;">물리친 해커: <span id="mg-score">0</span> / 15</div>
+        </div>
+        <canvas id="mg-canvas" width="850" height="650"></canvas>
+        
+        <div id="controls-guide">키보드 방향키/스페이스바 또는 아래 버튼을 누르세요</div>
+        <div id="touch-controls">
+            <div class="control-btn" id="btn-left">◀</div>
+            <div class="control-btn" id="btn-shoot">🔴 발사</div>
+            <div class="control-btn" id="btn-right">▶</div>
+        </div>
+        
+        <div id="mg-result">
+            <h2 id="mg-result-title" style="color:var(--primary); font-size:2.5em; margin-top:0;">결과</h2>
+            <p id="mg-result-desc" style="font-size:1.2em; line-height:1.6;"></p>
+            <button class="start-btn" style="margin-top:20px; font-size:1em; padding:10px 20px;" onclick="location.reload()">처음부터 다시하기</button>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+
+    <div id="clue-modal" class="modal">
+        <div id="clue-icon">🔍</div>
+        <h3 id="clue-title">단서</h3>
+        <div id="clue-text">단서 내용</div>
+        <div class="btn-group"><button class="btn-close" onclick="closeModal()">확인</button></div>
+    </div>
+
+    <div id="answer-modal" class="modal">
+        <h3>🔒 최종 암호 입력</h3>
+        <p id="answer-question" style="font-weight: bold; line-height: 1.5; color: #334155;"></p>
+        <input type="number" id="answer-input" placeholder="숫자만 입력하세요" onkeyup="if(window.event.keyCode==13) checkAnswer()">
+        <div class="btn-group">
+            <button class="btn-submit" onclick="checkAnswer()">정답 확인</button>
+            <button class="btn-close" onclick="closeModal()">취소</button>
+        </div>
+        <br><button class="btn-hint" onclick="showHint()" style="margin-top:10px;">💡 힌트 보기</button>
+    </div>
+
+    <div id="explain-modal" class="modal">
+        <h3>🎉 정답입니다!</h3>
+        <div id="explain-text">해석 내용</div>
+        <div class="btn-group"><button class="btn-submit" onclick="nextStage()">다음 관문으로 ➡️</button></div>
+    </div>
+</div>
+
+<script>
+    let audioCtx = null;
+    
+    document.body.addEventListener('click', () => {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
+
+    function playSound(type) {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'flip') { 
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'shoot') { 
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now); osc.stop(now + 0.2);
+        } else if (type === 'hit') { 
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(10, now + 0.25);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.start(now); osc.stop(now + 0.25);
+        } else if (type === 'fanfare') { 
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
+            notes.forEach((freq, i) => {
+                const t = now + i * 0.15;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'sine'; o.frequency.value = freq;
+                o.connect(g); g.connect(audioCtx.destination);
+                g.gain.setValueAtTime(0.4, t);
+                g.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                o.start(t); o.stop(t + 0.5);
+            });
+        } else if (type === 'victory') { 
+            const notes = [
+                {f: 392.00, t: 0.0, d: 0.15}, 
+                {f: 523.25, t: 0.15, d: 0.15}, 
+                {f: 659.25, t: 0.30, d: 0.15}, 
+                {f: 783.99, t: 0.45, d: 0.15}, 
+                {f: 523.25, t: 0.60, d: 1.2}, 
+                {f: 659.25, t: 0.60, d: 1.2}, 
+                {f: 783.99, t: 0.60, d: 1.2}, 
+                {f: 1046.50, t: 0.60, d: 1.2} 
+            ];
+            notes.forEach(note => {
+                const o1 = audioCtx.createOscillator();
+                const g1 = audioCtx.createGain();
+                o1.type = 'triangle'; o1.frequency.value = note.f;
+                o1.connect(g1); g1.connect(audioCtx.destination);
+                
+                const o2 = audioCtx.createOscillator();
+                const g2 = audioCtx.createGain();
+                o2.type = 'square'; o2.frequency.value = note.f;
+                o2.connect(g2); g2.connect(audioCtx.destination);
+
+                g1.gain.setValueAtTime(0, now + note.t);
+                g1.gain.linearRampToValueAtTime(0.3, now + note.t + 0.05);
+                g1.gain.exponentialRampToValueAtTime(0.01, now + note.t + note.d);
+
+                g2.gain.setValueAtTime(0, now + note.t);
+                g2.gain.linearRampToValueAtTime(0.1, now + note.t + 0.05);
+                g2.gain.exponentialRampToValueAtTime(0.01, now + note.t + note.d);
+
+                o1.start(now + note.t); o1.stop(now + note.t + note.d);
+                o2.start(now + note.t); o2.stop(now + note.t + note.d);
+            });
+        } else if (type === 'siren') { 
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, now);
+            for(let i=0; i<6; i++) {
+                osc.frequency.linearRampToValueAtTime(800, now + 0.25 + i*0.5);
+                osc.frequency.linearRampToValueAtTime(400, now + 0.5 + i*0.5);
+            }
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.2, now + 3);
+            gain.gain.linearRampToValueAtTime(0.01, now + 3.1);
+            osc.start(now); osc.stop(now + 3.1);
+        }
+    }
+
+    const stages = [
+        { title: "화폐 박물관", story: "갑자기 박물관 전체에 사이렌이 울리며 문이 굳게 잠겼습니다! <br><em>'첫 번째 출구의 암호는 내가 낸 수수께끼 지폐의 금액이라네!'</em>", a: "50000", hint: "우리나라 지폐 중 가장 금액이 큰 권종을 떠올려보세요.", exp: "50,000원권은 신사임당이 그려진 노란색 지폐로, 우리나라에서 가장 큰 금액의 화폐입니다. (10,000원 3장 + 5,000원 4장 = 50,000원)", q: "세 장의 카드 단서를 조합하여 지폐의 금액을 숫자로 입력하세요.", items: [{n:"동전관", i:"🪙", clue:"단서 1: 10,000원권 3장과 5,000원권 4장을 합친 금액은 이 지폐 1장과 가치가 같습니다."}, {n:"지폐관", i:"💵", clue:"단서 2: 이 지폐는 노란색을 띠고 있으며, 앞면에는 신사임당이 그려져 있습니다."}, {n:"안내문", i:"📜", clue:"단서 3: 정답은 이 지폐의 최종 금액을 '숫자로만' 입력하는 것입니다."}] },
+        { title: "환율 계산기", story: "다음 방으로 넘어가는 비행기를 타려면 미국 달러로 표시된 물건을 원화로 정확히 계산해야 합니다.", a: "20250", hint: "물건의 달러 가격에 1달러당 원화 환율을 곱하면 우리나라 돈으로 얼마인지 알 수 있어요.", exp: "환율은 두 나라 화폐의 교환 비율입니다. 15달러의 물건을 사려면 (15달러 × 1,350원) = 20,250원이 필요합니다.", q: "물건을 사기 위해 필요한 원화는 총 얼마일까요?", items: [{n:"환율 전광판", i:"📈", clue:"오늘의 환율: 1달러(USD) = 1,350원"}, {n:"여행 가방", i:"🧳", clue:"친구들에게 줄 기념품을 사려고 합니다. 기념품의 가격은 총 '15달러'입니다."}, {n:"계산기", i:"🧮", clue:"환율을 적용하여 15달러가 우리나라 돈으로 얼마인지 정확히 계산하세요."}] },
+        { title: "물물교환 시대", story: "원시시대로 시간 이동을 했습니다! 상인과 정확한 교환을 해야 포탈이 열립니다.", a: "14", hint: "사과를 얻기 위한 조개 개수와 포도를 얻기 위한 조개 개수를 각각 구해서 더해보세요.", exp: "사과 9개를 얻으려면 조개 6개(3개당 2개)가 필요하고, 포도 2송이를 얻으려면 조개 8개(1송이당 4개)가 필요하므로 총 14개입니다.", q: "원하는 과일을 모두 얻으려면 조개가 총 몇 개 필요한지 숫자로 적으세요.", items: [{n:"상인의 규칙", i:"📜", clue:"우리의 규칙: 사과 3개를 원한다면 조개 2개를 내라. 포도 1송이는 조개 4개와 바꿀 수 있다."}, {n:"바구니", i:"🧺", clue:"마을 사람들과 나누어 먹으려면 사과 '9개'와 포도 '2송이'가 필요합니다."}, {n:"저울", i:"⚖️", clue:"규칙에 맞추어 사과와 포도를 얻기 위해 내야 할 조개의 총합을 계산하세요."}] },
+        { title: "용돈 기입장", story: "거대한 금고 방에 갇혔습니다. 바닥에 찢어진 '용돈 기입장'의 최종 잔액이 바로 이 금고의 비밀번호입니다!", a: "20000", hint: "원래 있던 돈과 들어온 돈(수입)을 더하고, 쓴 돈(지출)을 모두 빼면 남은 돈이 됩니다.", exp: "이월 12,500원 + 수입 20,000원 = 32,500원입니다. 여기서 지출(4,500원+8,000원 = 12,500원)을 빼면 최종 잔액은 20,000원입니다.", q: "현재 남은 돈(잔액)을 계산하여 암호를 입력하세요.", items: [{n:"이월 잔액", i:"🏦", clue:"지난달에 쓰고 남은 돈이 12,500원 있었습니다. 그리고 이번 달 부모님께 용돈으로 20,000원을 받았습니다."}, {n:"지출 내역 1", i:"✏️", clue:"새 학기 준비를 위해 학용품을 4,500원어치 샀습니다."}, {n:"지출 내역 2", i:"🎁", clue:"가장 친한 친구의 생일 선물을 사느라 8,000원을 썼습니다."}] },
+        { title: "필요와 욕구", story: "사막 방을 건너가려면 욕심을 버리고 '생존에 가장 먼저 충족되어야 할 것'이 들어있는 상자를 선택해야 합니다.", a: "2", hint: "없으면 생명이나 기본 생활에 당장 큰 위협이 되는 것을 '필요'라고 합니다.", exp: "생명 유지에 필수적인 '식수'는 '필요'에 해당하며, 없어도 살 수 있는 게임기나 브랜드 운동화는 '욕구'에 해당합니다.", q: "생존에 반드시 필요한 항목이 든 상자의 번호(1자리)를 입력하세요.", items: [{n:"상자 1", i:"🎮", clue:"[1] 최신 게임기: 스트레스를 풀고 즐거움을 주지만, 생명을 유지하는 데 필수적이지는 않습니다."}, {n:"상자 2", i:"💧", clue:"[2] 깨끗한 식수: 사람은 이것을 며칠만 마시지 않아도 생명에 치명적인 위험을 겪습니다."}, {n:"상자 3", i:"👟", clue:"[3] 유명 브랜드 운동화: 멋지고 튼튼하지만, 다른 신발로도 충분히 대체 가능합니다."}] },
+        { title: "합리적 소비", story: "투명한 유령 상인이 나타나 길을 막습니다. <em>'어떤 마트에서 사는 것이 가장 저렴한지 1개당 단가를 증명해라.'</em>", a: "1400", hint: "묶음 상품의 전체 가격을 개수로 나누면 1개당 가격(단가)을 알 수 있어요.", exp: "A 마트는 1개 1,500원이고, B 마트는 3개에 4,200원이므로 1개당 1,400원입니다. 합리적 소비는 더 저렴한 1,400원입니다.", q: "가장 저렴하게 구매했을 때, 과자 '1개당' 가격은 얼마입니까?", items: [{n:"A 마트", i:"🏪", clue:"A 마트에서는 내가 좋아하는 과자를 1개에 1,500원에 팔고 있습니다."}, {n:"B 마트", i:"🛒", clue:"B 마트에서는 똑같은 과자를 3개 묶음으로 총 4,200원에 팔고 있습니다."}, {n:"계산법", i:"🧠", clue:"두 마트 중 어디서 사는 것이 합리적인지 1개당 가격을 계산하여 가장 싼 단가를 찾아보세요."}] },
+        { title: "이자 계산", story: "은행의 핵심인 '이자'를 서버에 정확히 계산해 입력해야 전원이 다시 켜집니다!", a: "1000", hint: "원금에 이자율을 백분율에서 소수로 바꾸어(예: 4%는 0.04) 곱하면 이자 금액이 나옵니다.", exp: "이자는 원금에 이자율을 곱하여 계산합니다. 원금 25,000원 × 연 4%(0.04) = 1,000원이 됩니다.", q: "1년 뒤에 원금 외에 추가로 받게 되는 '이자 금액'은 얼마일까요?", items: [{n:"내 통장", i:"📘", clue:"당신은 은행에 원금 25,000원을 예금했습니다."}, {n:"은행 금리표", i:"📊", clue:"이 은행에서 1년 동안 돈을 맡기면 연 4%의 이자를 줍니다."}, {n:"서버 힌트", i:"🖥️", clue:"1년 뒤 받게 되는 전체 금액이 아니라, '순수하게 늘어난 이자'만 계산해야 합니다."}] },
+        { title: "안전한 예금", story: "<em>'은행이 무너져도 너의 돈을 지켜주는 든든한 방패가 있지! 그 한도를 입력하라.'</em> 방화벽을 해제할 숫자를 찾아야 합니다.", a: "100000000", hint: "2025년부터 상향된 예금자보호법의 최대 보장 금액을 떠올려보세요. (0의 개수에 주의하세요!)", exp: "우리나라는 금융회사가 파산하더라도 예금자보호법에 의해 2025년부터 최대 1억 원(100,000,000원)까지 보호받을 수 있습니다.", q: "예금자보호제도로 보호받을 수 있는 최대 금액(단위: 원)을 숫자로 입력하세요.", items: [{n:"마법책", i:"📖", clue:"국가는 금융회사가 파산하더라도 예금보험공사를 통해 예금자의 돈을 일정 금액까지 안전하게 보호해 줍니다."}, {n:"최신 뉴스", i:"📰", clue:"[긴급 속보] 2025년부터 예금자보호한도가 기존 5천만 원에서 대폭 상향 조정되었습니다!"}, {n:"금고의 비밀", i:"🏦", clue:"새롭게 바뀐 예금자보호한도 금액(원금+이자 포함)을 0을 빠뜨리지 말고 숫자로만 적으세요."}] },
+        { title: "금융 사기 예방", story: "악당의 보이스피싱 해킹을 막기 위해 서둘러 신고 전화를 거세요!", a: "1332", hint: "💡 시각적 수수께끼: [ 🥇 1등 ] [ 📐 삼각형의 변 ] [ 🍀 네잎클로버 잎 - 1 ] [ ✌️ 손가락 수 ]", exp: "보이스피싱 피해나 불법사금융 피해가 발생했을 때 신고 및 지급정지를 요청하는 금융감독원 번호는 국번 없이 1332입니다.", q: "보이스피싱 피해 발생 시 계좌 지급정지를 요청하는 금융감독원 전화번호는?", items: [{n:"수상한 문자", i:"💬", clue:"[검찰청] 당신의 통장이 대포통장 범죄에 연루되었습니다. 안전계좌로 돈을 이체하세요."}, {n:"보안 수칙", i:"🛡️", clue:"국가기관은 '절대' 돈을 이체하라고 요구하지 않습니다! 이것은 명백한 보이스피싱 사기입니다."}, {n:"긴급 전화", i:"📞", clue:"즉시 금융감독원 불법사금융 피해신고센터(4자리 숫자)로 전화해서 피해를 막아야 합니다. 힌트를 확인해 번호를 유추하세요!"}] },
+        { title: "마지막 할인", story: "전설의 은행장 유령이 웃으며 말합니다.<br><em>'훌륭하다! 마지막으로 탈출용 마법 열쇠를 할인받아 구매하면 문을 열어주지!'</em>", a: "48000", hint: "원래 가격에서 할인율만큼의 금액을 먼저 구한 뒤, 원래 가격에서 빼면 최종 지불 금액이 됩니다.", exp: "64,000원의 25%(4분의 1)는 16,000원입니다. 정가에서 할인금액 16,000원을 빼면 최종 구매 가격은 48,000원입니다.", q: "할인이 적용된 마법 열쇠의 '최종 구매 가격'을 숫자로 입력하세요.", items: [{n:"가격표", i:"🏷️", clue:"마법 열쇠의 원래 정가는 64,000원입니다."}, {n:"할인 쿠폰", i:"🎟️", clue:"당신이 가진 쿠폰은 '25% 할인' 쿠폰입니다."}, {n:"계산기", i:"🧮", clue:"할인율을 적용하여 깎아주는 금액이 얼마인지 구한 뒤, 내가 지불할 최종 금액을 계산하세요."}] }
+    ];
+
+    let currentStage = 0, coins = 0, time = 900, timerInterval;
+
+    function startGame() {
+        document.getElementById('title-screen').style.display = 'none'; 
+        document.getElementById('ui-layer').style.display = 'flex'; 
+        document.getElementById('stage-container').style.display = 'flex'; 
+        renderStage(); startTimer();
+    }
+
+    function renderStage() {
+        const stage = stages[currentStage];
+        document.getElementById('story-display').innerHTML = `<strong style="color:var(--primary); font-size:1.1em;">[관문 ${currentStage+1}] ${stage.title}</strong><br><br>${stage.story}`;
+        const grid = document.getElementById('card-grid'); grid.innerHTML = '';
+        stage.items.forEach((item) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<div class="card-icon">${item.i}</div><div class="card-title">${item.n}</div>`;
+            card.onclick = () => { playSound('flip'); openClueModal(item); };
+            grid.appendChild(card);
+        });
+    }
+
+    function openClueModal(item) {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('clue-modal').style.display = 'block';
+        document.getElementById('answer-modal').style.display = 'none';
+        document.getElementById('clue-icon').innerText = item.i;
+        document.getElementById('clue-title').innerText = item.n;
+        document.getElementById('clue-text').innerText = item.clue;
+    }
+
+    function openAnswerModal() {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('clue-modal').style.display = 'none';
+        document.getElementById('answer-modal').style.display = 'block';
+        document.getElementById('answer-question').innerText = stages[currentStage].q;
+        const inputField = document.getElementById('answer-input');
+        inputField.value = ''; setTimeout(() => inputField.focus(), 100);
+    }
+
+    function closeModal() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('clue-modal').style.display = 'none';
+        document.getElementById('answer-modal').style.display = 'none';
+        document.getElementById('explain-modal').style.display = 'none';
+    }
+
+    function checkAnswer() {
+        const inputField = document.getElementById('answer-input');
+        const userAns = inputField.value.replace(/[^0-9]/g, ""); 
+        if (userAns === stages[currentStage].a) {
+            playSound('fanfare');
+            coins++; document.getElementById('coin-count').innerText = coins;
+            document.getElementById('answer-modal').style.display = 'none';
+            document.getElementById('explain-modal').style.display = 'block';
+            document.getElementById('explain-text').innerText = stages[currentStage].exp;
+        } else {
+            alert("❌ 삐빅! 암호가 틀렸습니다.");
+            inputField.value = ''; inputField.focus();
+        }
+    }
+
+    function nextStage() {
+        closeModal();
+        currentStage++;
+        if (currentStage < stages.length) renderStage();
+        else showEscapeSuccess();
+    }
+
+    function showHint() { alert(stages[currentStage].hint); }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            time--; let min = Math.floor(time / 60); let sec = time % 60;
+            document.getElementById('time-left').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+            if (time <= 0) { clearInterval(timerInterval); alert("⏰ 시간 초과! 마법의 미로에 영원히 갇혔습니다..."); location.reload(); }
+        }, 1000);
+    }
+
+    function showEscapeSuccess() {
+        clearInterval(timerInterval); playSound('fanfare');
+        const container = document.getElementById('stage-container');
+        
+        container.innerHTML = `
+            <h1 style="color:var(--primary); font-family:'Poppins', sans-serif; font-weight:800; font-size: 3em; text-shadow: 2px 2px #000;">ESCAPE SUCCESS!</h1>
+            <div style="font-size: 5rem; margin: 20px 0;">👑</div>
+            <p style="font-size: 1.2em; line-height: 1.6; text-align:center;">
+                축하합니다!<br>10개의 황금 동전을 모두 모아 무사히 탈출했습니다.<br>당신은 진정한 <strong>머니 마스터</strong>입니다!
+            </p>
+        `;
+
+        setTimeout(() => {
+            playSound('siren');
+            document.getElementById('game-screen').style.animation = "flashRed 0.5s infinite alternate";
+            
+            container.innerHTML = `
+                <h1 style="color:#ef4444; font-family:'Poppins', sans-serif; font-weight:800; font-size: 3.5em; text-shadow: 2px 2px #000; animation: shake 0.5s infinite;">WARNING!</h1>
+                <div style="font-size: 5rem; margin: 10px 0; animation: shake 0.5s infinite;">🚨</div>
+                <p style="font-size: 1.2em; line-height: 1.6; text-align:center; color: white;">
+                    <strong style="color:#ef4444; font-size:1.2em;">시스템 해킹 감지!</strong><br><br>
+                    외계 바이러스들이 방탈출 시스템을 뚫고<br>당신이 모은 <strong>황금 동전</strong>을 훔치러 내려오고 있습니다!<br>우주선을 조종해 끝까지 지켜내세요!
+                </p>
+                <button class="unlock-btn" onclick="startMiniGame()" style="margin-top:20px; font-size:1.3em;">🚀 긴급 방어 모드 가동</button>
+            `;
+        }, 3500);
+    }
+
+    let mgCanvas, ctx, player, bullets = [], enemies = [], fireworkParticles = [], mgScore = 0, mgCoins = 10, mgAnimationId;
+    let keys = { ArrowLeft: false, ArrowRight: false, Space: false }, lastFireTime = 0, lastTime = 0;
+    let isGameOver = false, isGameWon = false;
+
+    function startMiniGame() {
+        document.getElementById('game-screen').style.animation = ""; 
+        document.getElementById('stage-container').style.display = 'none';
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('minigame-container').style.display = 'block';
+
+        mgCanvas = document.getElementById('mg-canvas'); ctx = mgCanvas.getContext('2d');
+        player = { x: 400, y: 460, width: 50, height: 50, speed: 6 }; 
+        
+        document.addEventListener('keydown', (e) => { if (e.code === 'ArrowLeft') keys.ArrowLeft = true; if (e.code === 'ArrowRight') keys.ArrowRight = true; if (e.code === 'Space') keys.Space = true; });
+        document.addEventListener('keyup', (e) => { if (e.code === 'ArrowLeft') keys.ArrowLeft = false; if (e.code === 'ArrowRight') keys.ArrowRight = false; if (e.code === 'Space') keys.Space = false; });
+
+        const bindTouch = (id, key) => {
+            const el = document.getElementById(id);
+            el.addEventListener('mousedown', () => keys[key] = true); el.addEventListener('mouseup', () => keys[key] = false); el.addEventListener('mouseleave', () => keys[key] = false);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false}); el.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+        };
+        bindTouch('btn-left', 'ArrowLeft'); bindTouch('btn-right', 'ArrowRight'); bindTouch('btn-shoot', 'Space');
+
+        setInterval(() => { if(!isGameOver) spawnEnemy() }, 1800); 
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnEnemy() { 
+        // 기준 속도 5% 증가 (0.385 -> 약 0.404) 및 ±10% 랜덤 속도 적용
+        const randomFactor = 0.90 + (Math.random() * 0.20); // 0.90 ~ 1.10
+        const randomizedSpeed = 0.404 * randomFactor;
+        enemies.push({ x: Math.random() * (mgCanvas.width - 40), y: -50, width: 40, height: 40, speed: randomizedSpeed }); 
+    }
+
+    function createFirework() {
+        const x = Math.random() * mgCanvas.width;
+        const y = Math.random() * (mgCanvas.height / 2);
+        const color = `hsl(${Math.random()*360}, 100%, 60%)`;
+        for (let i = 0; i < 40; i++) {
+            fireworkParticles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                life: 1.0, color: color
+            });
+        }
+    }
+
+    function gameLoop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const dt = timestamp - lastTime;
+        lastTime = timestamp;
+        let timeScale = Math.min(dt / 16.66, 3);
+
+        ctx.clearRect(0, 0, mgCanvas.width, mgCanvas.height);
+
+        if (!isGameOver) {
+            updateGame(timeScale); 
+            drawGame();
+            if (mgScore >= 15) endMiniGame(true);
+            if (mgCoins <= 0) endMiniGame(false);
+        } else if (isGameWon) {
+            drawGame(); 
+            updateAndDrawFireworks(timeScale);
+        }
+
+        if (!isGameOver || isGameWon) {
+            mgAnimationId = requestAnimationFrame(gameLoop);
+        }
+    }
+
+    function updateGame(ts) {
+        if (keys.ArrowLeft && player.x > 0) player.x -= player.speed * ts;
+        if (keys.ArrowRight && player.x < mgCanvas.width - player.width) player.x += player.speed * ts;
+
+        const now = Date.now();
+        if (keys.Space && now - lastFireTime > 300) {
+            playSound('shoot');
+            bullets.push({ x: player.x + player.width/2 - 5, y: player.y, width: 10, height: 20, speed: 8 });
+            lastFireTime = now;
+        }
+
+        bullets.forEach((b, i) => { b.y -= b.speed * ts; if (b.y < 0) bullets.splice(i, 1); });
+
+        enemies.forEach((e, eIndex) => {
+            e.y += e.speed * ts; 
+            if (e.y > mgCanvas.height - 150) { enemies.splice(eIndex, 1); mgCoins--; document.getElementById('mg-coins').innerText = mgCoins; return; }
+            bullets.forEach((b, bIndex) => {
+                if (b.x < e.x + e.width && b.x + b.width > e.x && b.y < e.y + e.height && b.y + b.height > e.y) {
+                    playSound('hit');
+                    enemies.splice(eIndex, 1); bullets.splice(bIndex, 1); mgScore++; document.getElementById('mg-score').innerText = mgScore;
+                }
+            });
+        });
+    }
+
+    function drawGame() {
+        ctx.font = "50px Arial"; ctx.fillText("🚀", player.x, player.y + 40);
+        ctx.fillStyle = "#ef4444"; bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+        ctx.font = "40px Arial"; enemies.forEach(e => ctx.fillText("👾", e.x, e.y + 35));
+    }
+
+    function updateAndDrawFireworks(ts) {
+        if (Math.random() < 0.05) createFirework(); 
+
+        fireworkParticles.forEach((p, i) => {
+            p.x += p.vx * ts;
+            p.y += p.vy * ts;
+            p.vy += 0.1 * ts; 
+            p.life -= 0.02 * ts;
+            
+            if (p.life <= 0) {
+                fireworkParticles.splice(i, 1);
+            } else {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+        ctx.globalAlpha = 1.0;
+    }
+
+    function endMiniGame(isWin) {
+        isGameOver = true;
+        isGameWon = isWin;
+        document.getElementById('mg-result').style.display = 'block';
+        document.getElementById('touch-controls').style.display = 'none'; 
+        document.getElementById('controls-guide').style.display = 'none';
+        
+        const title = document.getElementById('mg-result-title'), desc = document.getElementById('mg-result-desc');
+        if (isWin) {
+            playSound('victory'); 
+            createFirework(); createFirework(); createFirework(); 
+            title.innerText = "🎉 완벽한 승리! 🎉"; title.style.color = "var(--primary)";
+            desc.innerHTML = `대단합니다!<br>외계 바이러스를 모두 물리치고 <strong>${mgCoins}개의 황금 동전</strong>을 안전하게 지켜냈습니다.<br>당신은 진정한 머니 마스터입니다!`;
+        } else {
+            cancelAnimationFrame(mgAnimationId); 
+            title.innerText = "💀 방어 실패 💀"; title.style.color = "#ef4444";
+            desc.innerHTML = "외계 바이러스들이 황금 동전을 모두 훔쳐 달아났습니다...<br>다음엔 더 빠른 손놀림을 준비해 보세요!";
+        }
+    }
+</script>
+
+</body>
+</html>
